@@ -10,15 +10,21 @@ function Blob(x, y, r) {
 		this.pos.add(this.vel);
 	}
 
-	this.eats = function(other) {
-		var d = p5.Vector.dist(this.pos, other.pos);
-		if(d < this.r + other.r) {
-			var sum = PI * this.r * this.r + PI * other.r * other.r;
-			this.r = sqrt(sum/PI);
-			return true;
-		} else {
-			return false;
-		}
+	// this.eats = function(other) {
+	// 	var d = p5.Vector.dist(this.pos, other.pos);
+	// 	if(d < this.r + other.r) {
+	// 		var sum = PI * this.r * this.r + PI * other.r * other.r;
+	// 		this.r = sqrt(sum/PI);
+	// 		return true;
+	// 	} else {
+	// 		return false;
+	// 	}
+	// }
+
+	this.eats = function(r) {
+		var sum = PI * this.r * this.r + PI * r * r;
+		this.r = sqrt(sum/PI);
+		//return this.r;
 	}
 
 	this.constrain = function() {

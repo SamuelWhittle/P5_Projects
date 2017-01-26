@@ -13,7 +13,7 @@ function setup() {
 
 	createCanvas(1280,720);
 
-	blob = new Blob(random(width), random(height), 10);
+	blob = new Blob(1280,720, 10);
 
 	var data = {
 		x: blob.pos.x,
@@ -22,22 +22,24 @@ function setup() {
 	}
 
 	socket.emit('start', data);
-
-	socket.on('message', heartBeatMsg);
 	socket.on('blobsIncoming', blobsIncomingMsg);
+	socket.on('playersIncoming', playersIncomingMsg);
+	socket.on('message', heartBeatMsg);
 
 	function heartBeatMsg(data) {
-		players = data;
-		for(var i = 0; i < players.length; i++) {
-			if(players[i].id == socket.id) {
-				blob.r = players[i].r;
-			}
-		}
+		//console.log('heartBeatMsg');
 	}
 
 	function blobsIncomingMsg(data) {
-		console.log(data);
+		console.log('blobsIncomingMsg');
 		blobs = data;
+		//console.log(blobs);
+	}
+
+	function playersIncomingMsg(data) {
+		console.log('playersIncomingMsg');
+		players[data.id] = data;
+		console.log(players);
 	}
 }
 
@@ -52,18 +54,18 @@ function draw() {
 	scale(zoom);
 	translate(-blob.pos.x, -blob.pos.y);
 
-	for(var i = players.length-1; i >= 0; i--){
-		var id = players[i].id;
+	console.log(players.length);
+	for(var i = 0; i < players.length; i++){
+		console.log('Drawing player.');
 		if(players[i].id != socket.id) {
 			fill(0, 0, 255);
 			ellipse(players[i].x, players[i].y, players[i].r*2, players[i].r*2);
 		}
 	}
 
-	fill(255, 0, 0);
-	for(var i = 0; i < blobs.length; i++) {
-			ellipse(blobs[i].x, blobs[i].y, blobs[i].r*2, blobs[i].r*2);
-	}
+	drawBlobs();
+
+	//console.log('(' + blob.pos.x + ', ' + blob.pos.y + ')');
 
 	blob.show();
 	blob.update();
@@ -75,4 +77,17 @@ function draw() {
 		r: blob.r,
 	}
 	socket.emit('update', data);
+}
+
+function drawBlobs() {
+	//console.log('Drawing blobs.');
+	fill(255, 0, 0);
+	for(var i = 0; i < blobs.length; i++) {
+		if(Math.sqrt(Math.pow((blob.pos.x-blobs[i].x),2) + Math.pow((blob.pos.y-blobs[i].y),2)) > (blobs[i].r + blob.r)) {
+			ellipse(blobs[i].x, blobs[i].y, blobs[i].r*2, blobs[i].r*2);
+		} else {
+			blob.eats(3);
+			socket.emit('updateBlob', i);
+		}
+	}
 }

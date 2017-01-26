@@ -2,13 +2,6 @@
 var players = [];
 var blobs = [];
 
-function Blob(id, x, y, r) {
-  this.id = id;
-  this.x = x;
-  this.y = y;
-  this.r = r;
-}
-
 var express = require('express');
 
 var app = express();
@@ -21,15 +14,23 @@ console.log("My socket server is running");
 var socket = require('socket.io');
 var io = socket(server);
 
-for(var i = 0; i < 2000; i++) {
-  blobs.push(new Blob(1, Math.random(1280*2)-1280, Math.random(1280*2)-1280, 3));
+blobs[10] = {
+  x: 0,
+  y: 0,
+  r: 3
+};
+
+for(var i = 0; i < 200; i++){
+  blobs[i] = {
+    x: (Math.random()*1280*2)-1280,
+    y: (Math.random()*720*2)-720,
+    r: 3
+  }
 }
 
 setInterval(heartBeat, 1000/60);
 
 function heartBeat() {
-  io.sockets.emit('message', players);
-  io.sockets.emit('blobsIncomming', blobs);
 }
 
 io.sockets.on('connection', newConnection);
@@ -37,45 +38,52 @@ io.sockets.on('connection', newConnection);
 function newConnection(socket) {
   console.log('New connection: ' + socket.id);
 
+  io.sockets.emit('blobsIncoming', blobs);
+  console.log('Blobs sent.');
+
   socket.on('start', startMsg);
   socket.on('update', updateMsg);
+  socket.on('updateBlob', updateBlobMsg);
   socket.on('disconnect', disconnectMsg);
 
   function startMsg(data) {
     console.log(socket.id + " " + data.x + " " + data.y + " " + data.r);
 
-    var blob = new Blob(socket.id, data.x, data.y, data.r);
-    players.push(blob);
-    //socket.broadcast.emit('mouse', data);
-    //io.sockets.emit('mouse', data);
+    var blob = {
+      id:socket.id,
+      x:data.x,
+      y:data.y,
+      r:data.r,
+    };
+
+    players[socket.id] = blob;
+
+    console.log(players[socket.id]);
+    io.sockets.emit('playersIncoming', players[socket.id]);
   }
 
   function updateMsg(data) {
     //console.log(socket.id + " " + data.x + " " + data.y + " " + data.r);
 
-    var blob;
-    for(var i = 0; i < players.length; i++) {
-      if(socket.id == players[i].id) {
-        blob = players[i];
-      }
-    }
-
-    blob.x = data.x;
-    blob.y = data.y;
-    blob.r = data.r;
+    //console.log(socket.id);
+    players[socket.id].x = data.x;
+    players[socket.id].y = data.y;
+    players[socket.id].r = data.r;
+    io.sockets.emit('playersIncoming', players[socket.id]);
   }
 
-  function disconnectMsg(socket) {
-    console.log("Client has disconnected");
-    for(var i = 0; i < players.length; i++) {
-      if(socket.id == players[i].id) {
-        players.slice(i, 1);
-      }
+  function updateBlobMsg(data) {
+    blobs[data] = {
+      x: (Math.random()*1280*2)-1280,
+      y: (Math.random()*720*2)-720,
+      r: 3
     }
+    io.sockets.emit('blobsIncoming', blobs);
   }
 
-}
-
-function eatable() {
-
+  function disconnectMsg() {
+    console.log("Client: " + socket.id + " has disconnected");
+    delete players[socket.id];
+    console.log(players[socket.id]);
+  }
 }
